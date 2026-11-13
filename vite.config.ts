@@ -11,6 +11,9 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: ['https://saa-s-chat-bot.vercel.app'],
+    allowedHosts: ['saas-chat-bot.onrender.com'],
+  },
+  preview: {
+    allowedHosts: ['saas-chat-bot.onrender.com'],
   },
 })
