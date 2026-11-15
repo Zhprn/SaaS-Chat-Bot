@@ -218,8 +218,10 @@ export const waApi = {
   },
 
   // Logout from a session
-  logoutSession: async (): Promise<{ success: boolean }> => {
-    const response = await axiosInstance.post('/wa/logout');
+  logoutSession: async (sessionId?: string): Promise<{ success: boolean }> => {
+    const response = await axiosInstance.post(
+      sessionId ? `/wa/session/${sessionId}/logout` : '/wa/logout',
+    );
     // Handle nested response structure: { statusCode, message, data: { ... } }
     const payload: any = response.data;
     return payload?.data || payload;
