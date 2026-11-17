@@ -16,20 +16,13 @@ import {
 import { CheckCircleOutlined, CreditCardOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { userPackageApi, type UserPackage, type UserSubscription } from '../services/userPackageApi';
-import { useAuth } from '@/hooks/useAuth';
 
 const { Title, Paragraph, Text } = Typography;
-const SNAP_SCRIPT_ID = 'midtrans-snap-script';
-const SNAP_SCRIPT_URL =
-  import.meta.env.VITE_MIDTRANS_SNAP_URL ||
-  'https://app.sandbox.midtrans.com/snap/snap.js';
 
 const UserPackagesPage = () => {
   const navigate = useNavigate();
-  const { role } = useAuth();
   const [packages, setPackages] = useState<UserPackage[]>([]);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
-  const [clientKey, setClientKey] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [creatingPackageId, setCreatingPackageId] = useState<string | null>(null);
   const [confirmedPackages, setConfirmedPackages] = useState<Record<string, boolean>>({});
@@ -44,7 +37,6 @@ const UserPackagesPage = () => {
         userPackageApi.getActiveSubscription(),
       ]);
       setPackages(packageResp.packages);
-      setClientKey(packageResp.clientKey || '');
       setSubscription(activeSubscription);
     } catch (error) {
       message.error('Gagal memuat data paket');
@@ -58,43 +50,6 @@ const UserPackagesPage = () => {
     fetchData();
   }, []);
 
-  const loadSnapScript = async (activeClientKey: string) => {
-    if (window.snap) {
-      return window.snap;
-    }
-
-    const existing = document.getElementById(SNAP_SCRIPT_ID) as
-      | HTMLScriptElement
-      | null;
-
-    if (existing) {
-      await new Promise<void>((resolve, reject) => {
-        existing.addEventListener('load', () => resolve(), { once: true });
-        existing.addEventListener('error', () => reject(new Error('Gagal memuat Snap script')), { once: true });
-      });
-      if (window.snap) {
-        return window.snap;
-      }
-    }
-
-    await new Promise<void>((resolve, reject) => {
-      const script = document.createElement('script');
-      script.id = SNAP_SCRIPT_ID;
-      script.src = SNAP_SCRIPT_URL;
-      script.setAttribute('data-client-key', activeClientKey);
-      script.async = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Gagal memuat Midtrans Snap'));
-      document.body.appendChild(script);
-    });
-
-    if (!window.snap) {
-      throw new Error('Snap tidak tersedia setelah script dimuat');
-    }
-
-    return window.snap;
-  };
-
   const handleChoosePackage = async (packageId: string) => {
     if (!confirmedPackages[packageId]) {
       message.warning('Centang konfirmasi dulu sebelum lanjut pembayaran');
@@ -105,41 +60,13 @@ const UserPackagesPage = () => {
     try {
       const order = await userPackageApi.createOrder(packageId);
 
-      if (order.token && clientKey) {
-        const snap = await loadSnapScript(clientKey);
-        snap.pay(order.token, {
-          onSuccess: async () => {
-            message.success('Pembayaran berhasil');
-            setDetailOpen(false);
-            await fetchData();
-            if (role === 'admin' && order.paymentId) {
-              navigate(`/admin/payments/${order.paymentId}`);
-            }
-          },
-          onPending: async () => {
-            message.info('Pembayaran pending, silakan selesaikan pembayaran Anda');
-            setDetailOpen(false);
-            await fetchData();
-            if (role === 'admin' && order.paymentId) {
-              navigate(`/admin/payments/${order.paymentId}`);
-            }
-          },
-          onError: () => {
-            message.error('Pembayaran gagal diproses');
-          },
-          onClose: () => {
-            message.warning('Popup pembayaran ditutup sebelum selesai');
-          },
-        });
-        return;
-      }
-
       if (!order.redirectUrl) {
         message.error('Gagal membuat order pembayaran');
         return;
       }
 
-      message.info('Client key Snap belum tersedia, dialihkan ke halaman pembayaran Midtrans.');
+      // DANA hosted checkout; DANA redirects back to /user/payment?orderId=...
+      message.info('Mengalihkan ke halaman pembayaran DANA...');
       window.location.href = order.redirectUrl;
     } catch (error: any) {
       message.error(error?.response?.data?.message || 'Gagal memproses pembayaran');

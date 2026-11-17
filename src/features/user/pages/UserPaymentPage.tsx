@@ -7,7 +7,7 @@ import {
   message,
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import {
   userPackageApi,
@@ -87,8 +87,28 @@ const UserPaymentPage = () => {
     }
   };
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   useEffect(() => {
-    fetchHistory();
+    const returnedOrderId = searchParams.get('orderId');
+    if (!returnedOrderId) {
+      fetchHistory();
+      return;
+    }
+
+    // Back from DANA checkout: sync status (webhook may not have arrived yet)
+    userPackageApi
+      .checkPaymentStatus(returnedOrderId)
+      .then(({ status }) => {
+        if (status === 'SUCCESS') message.success('Pembayaran berhasil, paket sudah aktif');
+        else if (status === 'PENDING') message.info('Pembayaran belum selesai');
+        else if (status) message.warning(`Status pembayaran: ${status}`);
+      })
+      .catch(() => message.warning('Gagal memeriksa status pembayaran'))
+      .finally(() => {
+        setSearchParams({}, { replace: true });
+        fetchHistory();
+      });
   }, []);
 
   return (

@@ -53,7 +53,7 @@ function unwrap<T = any>(payload: any): T {
 }
 
 export const userPackageApi = {
-  getPackages: async (): Promise<{ packages: UserPackage[]; clientKey?: string }> => {
+  getPackages: async (): Promise<{ packages: UserPackage[] }> => {
     const response = await axiosInstance.get('/payment/packages');
     const inner = unwrap<any>(response.data);
     const rows: RawPackage[] = Array.isArray(inner?.data) ? inner.data : [];
@@ -69,7 +69,6 @@ export const userPackageApi = {
         features: Array.isArray(item.features) ? item.features : [],
         benefits: Array.isArray(item.benefits) ? item.benefits : [],
       })),
-      clientKey: inner?.clientKey,
     };
   },
 
@@ -81,13 +80,12 @@ export const userPackageApi = {
 
   createOrder: async (
     packageId: string,
-  ): Promise<{ orderId: string; paymentId?: string; token?: string; redirectUrl?: string }> => {
+  ): Promise<{ orderId: string; paymentId?: string; redirectUrl?: string }> => {
     const response = await axiosInstance.post('/payment/create-order', { packageId });
     const inner = unwrap<any>(response.data);
     return {
       orderId: inner.orderId,
       paymentId: inner?.payment?.id,
-      token: inner.token,
       redirectUrl: inner.redirectUrl,
     };
   },
@@ -98,9 +96,9 @@ export const userPackageApi = {
     return Array.isArray(inner?.data) ? inner.data : [];
   },
 
-  checkPaymentStatus: async (orderId: string): Promise<{ success: boolean }> => {
-    const response = await axiosInstance.post(`/payment/check-status/${orderId}`);
+  checkPaymentStatus: async (orderId: string): Promise<{ success: boolean; status?: string }> => {
+    const response = await axiosInstance.get(`/payment/status/${encodeURIComponent(orderId)}`);
     const inner = unwrap<any>(response.data);
-    return { success: inner?.success ?? true };
+    return { success: inner?.success ?? true, status: inner?.status };
   },
 };
