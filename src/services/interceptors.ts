@@ -26,6 +26,14 @@ axiosInstance.interceptors.response.use(
       useAuthStore.getState().logout();
       window.location.href = ROUTES.LOGIN;
     }
+    // Package expired/missing (backend SubscriptionGuard) -> package page
+    if (
+      error.response?.status === 403 &&
+      (error.response.data as any)?.message === 'SUBSCRIPTION_REQUIRED' &&
+      window.location.pathname !== '/user/packages'
+    ) {
+      window.location.href = '/user/packages';
+    }
     return Promise.reject(error);
   }
 );

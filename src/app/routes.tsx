@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Spin } from 'antd';
-import { ProtectedRoute } from '@/utils/routeGuard';
+import { ProtectedRoute, SubscriptionRoute } from '@/utils/routeGuard';
 import MainLayout from '@/components/layout/main/MainLayout';
 import DashboardLayout from '@/components/layout/dashboard/DashboardLayout';
 import AdminLayout from '@/components/layout/admin/AdminLayout';
@@ -58,14 +58,24 @@ export const AppRoutes = () => {
             <Route path="/user/profile" element={<UserProfilePage />} />
             <Route path="/user/payment" element={<UserPaymentPage />} />
             <Route path="/user/packages" element={<UserPackagesPage />} />
-            <Route path="/wa" element={<WaPage />} />
-            <Route path="/wa/session" element={<WaSessionPage />} />
-            <Route path="/wa/broadcast" element={<Navigate to="/wa?tab=broadcasts" replace />} />
-            <Route path="/wa/group" element={<Navigate to="/wa?tab=groups" replace />} />
-            <Route path="/wa/chat" element={<WaChatConsolePage />} />
-            <Route path="/wa/contacts" element={<WaContactsPage />} />
-            <Route path="/email" element={<EmailPage />} />
-            <Route path="/ai/agent" element={<AiAgentPage />} />
+
+            {/* Feature pages: require an active package */}
+            <Route
+              element={
+                <SubscriptionRoute>
+                  <Outlet />
+                </SubscriptionRoute>
+              }
+            >
+              <Route path="/wa" element={<WaPage />} />
+              <Route path="/wa/session" element={<WaSessionPage />} />
+              <Route path="/wa/broadcast" element={<Navigate to="/wa?tab=broadcasts" replace />} />
+              <Route path="/wa/group" element={<Navigate to="/wa?tab=groups" replace />} />
+              <Route path="/wa/chat" element={<WaChatConsolePage />} />
+              <Route path="/wa/contacts" element={<WaContactsPage />} />
+              <Route path="/email" element={<EmailPage />} />
+              <Route path="/ai/agent" element={<AiAgentPage />} />
+            </Route>
           </Route>
 
           {/* Admin routes dengan AdminLayout */}

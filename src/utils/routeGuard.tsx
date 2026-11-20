@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { Spin } from 'antd';
+import { userPackageApi } from '@/features/user/services/userPackageApi';
 import { useAuth } from '@/hooks/useAuth';
 import type { Role } from '@/types/global';
 
@@ -25,5 +28,29 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/" replace />;
   }
 
+  return <>{children}</>;
+};
+
+/** Users without an active package are sent to the package page. Admins bypass. */
+export const SubscriptionRoute = ({ children }: { children: React.ReactNode }) => {
+  const { role } = useAuth();
+  const [hasSub, setHasSub] = useState<boolean | null>(role === 'admin' ? true : null);
+
+  useEffect(() => {
+    if (role === 'admin') return;
+    userPackageApi
+      .getActiveSubscription()
+      .then((sub) => setHasSub(!!sub))
+      .catch(() => setHasSub(false));
+  }, [role]);
+
+  if (hasSub === null) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+  if (!hasSub) return <Navigate to="/user/packages" replace />;
   return <>{children}</>;
 };

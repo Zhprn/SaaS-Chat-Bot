@@ -93,6 +93,16 @@ const UserPackagesPage = () => {
         Pilih paket yang sesuai dengan kebutuhan bisnis Anda. Buka detail paket, konfirmasi persetujuan, lalu lanjutkan pembayaran.
       </Paragraph>
 
+      {!loading && !subscription && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 20 }}
+          message="Belum ada paket aktif"
+          description="Pilih dan bayar paket terlebih dahulu untuk menggunakan fitur WhatsApp, Email, dan AI. Jika paket Anda sudah habis, perpanjang untuk mengaktifkan kembali."
+        />
+      )}
+
       {subscription && (
         <Alert
           type="success"
