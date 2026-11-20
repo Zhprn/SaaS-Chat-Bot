@@ -29,7 +29,10 @@ const formatAmount = (amount: number, currency: string) =>
 const formatDate = (date: string | null) =>
   date ? new Date(date).toLocaleDateString('id-ID', { dateStyle: 'medium' }) : '-';
 
-const columns: ColumnsType<PaymentRecord> = [
+const getColumns = (
+  onContinue: (record: PaymentRecord) => void,
+  continuingId: string | null,
+): ColumnsType<PaymentRecord> => [
   {
     title: 'Order ID',
     dataIndex: 'orderId',
@@ -68,6 +71,21 @@ const columns: ColumnsType<PaymentRecord> = [
     key: 'createdAt',
     render: (val: string) => formatDate(val),
   },
+  {
+    title: 'Action',
+    key: 'action',
+    render: (_, record) =>
+      record.status === 'PENDING' && record.packageId ? (
+        <Button
+          type="primary"
+          size="small"
+          loading={continuingId === record.id}
+          onClick={() => onContinue(record)}
+        >
+          Lanjutkan Pembayaran
+        </Button>
+      ) : null,
+  },
 ];
 
 const UserPaymentPage = () => {
@@ -84,6 +102,35 @@ const UserPaymentPage = () => {
       message.error('Gagal memuat riwayat pembayaran');
     } finally {
       setLoadingHistory(false);
+    }
+  };
+
+  const [continuingId, setContinuingId] = useState<string | null>(null);
+
+  // Resume an unfinished checkout. Backend reuses the same DANA link while it is
+  // still valid (~20 min) and creates a fresh order otherwise.
+  const handleContinue = async (record: PaymentRecord) => {
+    setContinuingId(record.id);
+    try {
+      // Avoid paying twice if it was actually paid but not synced yet
+      const { status } = await userPackageApi.checkPaymentStatus(record.orderId).catch(() => ({ status: undefined }));
+      if (status && status !== 'PENDING') {
+        message.info(status === 'SUCCESS' ? 'Pembayaran ini sudah berhasil' : `Status pembayaran: ${status}`);
+        fetchHistory();
+        return;
+      }
+
+      const order = await userPackageApi.createOrder(record.packageId!);
+      if (!order.redirectUrl) {
+        message.error('Gagal membuat ulang link pembayaran');
+        return;
+      }
+      message.info('Mengalihkan ke halaman pembayaran DANA...');
+      window.location.href = order.redirectUrl;
+    } catch (error: any) {
+      message.error(error?.response?.data?.message || 'Gagal melanjutkan pembayaran');
+    } finally {
+      setContinuingId(null);
     }
   };
 
@@ -125,12 +172,12 @@ const UserPaymentPage = () => {
       </div>
 
       <Table<PaymentRecord>
-        columns={columns}
+        columns={getColumns(handleContinue, continuingId)}
         dataSource={payments}
         rowKey="id"
         loading={loadingHistory}
         pagination={{ pageSize: 10 }}
-        scroll={{ x: 700 }}
+        scroll={{ x: 900 }}
       />
     </>
   );
