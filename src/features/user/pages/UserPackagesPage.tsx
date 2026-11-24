@@ -65,8 +65,8 @@ const UserPackagesPage = () => {
         return;
       }
 
-      // DANA hosted checkout; DANA redirects back to /user/payment?orderId=...
-      message.info('Mengalihkan ke halaman pembayaran DANA...');
+      // DOKU hosted checkout; DOKU redirects back to /user/payment?orderId=...
+      message.info('Mengalihkan ke halaman pembayaran DOKU...');
       window.location.href = order.redirectUrl;
     } catch (error: any) {
       message.error(error?.response?.data?.message || 'Gagal memproses pembayaran');

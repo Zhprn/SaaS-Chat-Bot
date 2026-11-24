@@ -125,7 +125,7 @@ const PaymentDetailPage = () => {
           <Descriptions.Item label="Snap URL">
             {payment.snapUrl ? (
               <a href={payment.snapUrl} target="_blank" rel="noreferrer">
-                Buka Link Pembayaran DANA
+                Buka Link Pembayaran
               </a>
             ) : (
               '-'

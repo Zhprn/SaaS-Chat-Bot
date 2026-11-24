@@ -107,7 +107,7 @@ const UserPaymentPage = () => {
 
   const [continuingId, setContinuingId] = useState<string | null>(null);
 
-  // Resume an unfinished checkout. Backend reuses the same DANA link while it is
+  // Resume an unfinished checkout. Backend reuses the same DOKU link while it is
   // still valid (~20 min) and creates a fresh order otherwise.
   const handleContinue = async (record: PaymentRecord) => {
     setContinuingId(record.id);
@@ -125,7 +125,7 @@ const UserPaymentPage = () => {
         message.error('Gagal membuat ulang link pembayaran');
         return;
       }
-      message.info('Mengalihkan ke halaman pembayaran DANA...');
+      message.info('Mengalihkan ke halaman pembayaran DOKU...');
       window.location.href = order.redirectUrl;
     } catch (error: any) {
       message.error(error?.response?.data?.message || 'Gagal melanjutkan pembayaran');
@@ -143,12 +143,12 @@ const UserPaymentPage = () => {
       return;
     }
 
-    // Back from DANA checkout: sync status (webhook may not have arrived yet)
+    // Back from DOKU checkout: sync status (webhook may not have arrived yet)
     userPackageApi
       .checkPaymentStatus(returnedOrderId)
       .then(({ status }) => {
         if (status === 'SUCCESS') message.success('Pembayaran berhasil, paket sudah aktif');
-        else if (status === 'PENDING') message.info('Pembayaran belum selesai');
+        else if (status === 'PENDING') message.info('Pembayaran belum terkonfirmasi. Jika sudah membayar, muat ulang halaman ini dalam 1 menit');
         else if (status) message.warning(`Status pembayaran: ${status}`);
       })
       .catch(() => message.warning('Gagal memeriksa status pembayaran'))
